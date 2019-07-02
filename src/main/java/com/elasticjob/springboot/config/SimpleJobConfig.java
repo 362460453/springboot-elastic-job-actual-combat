@@ -8,6 +8,7 @@ import com.dangdang.ddframe.job.lite.config.LiteJobConfiguration;
 import com.dangdang.ddframe.job.lite.spring.api.SpringJobScheduler;
 import com.dangdang.ddframe.job.reg.zookeeper.ZookeeperRegistryCenter;
 import com.elasticjob.springboot.job.JavaSimpleJob;
+import com.elasticjob.springboot.job.JavaSimpleJobB;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,23 +32,33 @@ public class SimpleJobConfig {
         return new JavaSimpleJob();
     }
 
+    @Bean
+    public JavaSimpleJobB simpleJobB() {
+        return new JavaSimpleJobB();
+    }
+
 
     @Bean(initMethod = "init")
     public JobScheduler simpleJobScheduler(final JavaSimpleJob simpleJob, @Value("${simpleJob.cron}") final String cron,
                                            @Value("${simpleJob.shardingTotalCount}") final int shardingTotalCount) {
+        return new SpringJobScheduler(simpleJob, regCenter, getSimpleJobConfiguration(simpleJob.getClass(), cron, shardingTotalCount));
+    }
 
-        return new SpringJobScheduler(simpleJob, regCenter, getSimpleAJobConfiguration(simpleJob.getClass(), cron, shardingTotalCount));
+    @Bean(initMethod = "init")
+    public JobScheduler simpleJobBScheduler(final JavaSimpleJobB simpleJobB, @Value("${simpleJob.b.cron}") final String cron,
+                                            @Value("${simpleJob.b.shardingTotalCount}") final int shardingTotalCount) {
+        return new SpringJobScheduler(simpleJobB, regCenter, getSimpleJobConfiguration(simpleJobB.getClass(), cron, shardingTotalCount));
     }
 
     /**
-     * 简单定时任务A
+     * 简单定时任务配置
      *
      * @param jobClass
      * @param cron
      * @param shardingTotalCount
      * @return
      */
-    private LiteJobConfiguration getSimpleAJobConfiguration(final Class<? extends SimpleJob> jobClass, final String cron, final int shardingTotalCount) {
+    private LiteJobConfiguration getSimpleJobConfiguration(final Class<? extends SimpleJob> jobClass, final String cron, final int shardingTotalCount) {
         return LiteJobConfiguration.newBuilder(new SimpleJobConfiguration(JobCoreConfiguration.newBuilder(
                 jobClass.getName(), cron, shardingTotalCount).build(), jobClass.getCanonicalName())).overwrite(true).build();
     }
